@@ -261,11 +261,15 @@
                     var isInstructionText = result.dialogue && (
                         // 明確な指示語で始まる
                         result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響|SE|ナレーション)/) ||
-                        // 状況説明パターン
-                        result.dialogue.match(/(している|してる|する)$/) ||
+                        // 状況説明パターン（動詞で終わる）
+                        result.dialogue.match(/(している|してる|する|いる|ある|もつ|見る|聞く|言う|話す|歩く|走る|座る|立つ|寝る|起きる|食べる|飲む|読む|書く|描く|作る|遊ぶ|歌う|踊る|笑う|泣く|怒る|喜ぶ|驚く|困る|悩む|考える|思う|感じる|知る|覚える|忘れる|教える|学ぶ|働く|休む|寝る|起きる)$/) ||
                         result.dialogue.indexOf('を') > -1 ||
                         result.dialogue.indexOf('な') > -1 ||
                         result.dialogue.indexOf('の') > -1 ||
+                        // パイプ記号による状況説明（キャラ名 | 状況）
+                        result.dialogue.indexOf('|') > -1 ||
+                        // 「で」を含む状況説明
+                        result.dialogue.indexOf('で') > -1 ||
                         // カメラワーク指示
                         result.dialogue.match(/(アップ|引き|寄り|カメラ|ズーム|パン|切り替え)/) ||
                         // 動作指示
@@ -278,7 +282,7 @@
                                         result.dialogue.toLowerCase().includes(keyword) &&
                                         result.dialogue !== result.title && // 重複除外
                                         (result.row_number > 3) && // 行番号1-3はタイトル行として除外
-                                        (hasCharacterName || !isInstructionText); // キャラ名がある場合は必ずセリフ、ない場合は指示文でなければOK
+                                        !isInstructionText; // 指示文でない場合のみセリフとして扱う（キャラ名の有無に関係なく）
                     
                     var isVoiceMatch = result.voice_instruction && 
                                      result.voice_instruction.toLowerCase().includes(keyword);
