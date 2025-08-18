@@ -1,6 +1,9 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import urllib.parse
+import sqlite3
+import os
+import urllib.request
+import tempfile
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -38,30 +41,62 @@ class handler(BaseHTTPRequestHandler):
                     'error': 'キーワードを入力してください'
                 }
             else:
-                # Demo data
-                demo_results = [
-                    {
-                        'management_id': 'DEMO001',
-                        'title': f'「{keyword}」を含むデモ動画1',
-                        'broadcast_date': '25/08/18',
-                        'character_name': 'サンサン',
-                        'dialogue': f'こんにちは！今日は{keyword}について話すよ！みんなで一緒に楽しもう！'
-                    },
-                    {
-                        'management_id': 'DEMO002', 
-                        'title': f'「{keyword}」を含むデモ動画2',
-                        'broadcast_date': '25/08/17',
-                        'character_name': 'くもりん',
-                        'dialogue': f'{keyword}って本当に面白いよね！みんなも一緒に覚えよう！'
+                # Search in real database from Dropbox
+                try:
+                    # Dropbox direct download URL
+                    dropbox_url = 'https://www.dropbox.com/scl/fi/jrns72qaqx1xu79yq3ndj/youtube_search_complete_all.db?rlkey=9jg1jmc4obzbtyc3ofn8yf2od&st=ijyc2fsc&dl=1'
+                    
+                    # Download database to temporary file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_db:
+                        urllib.request.urlretrieve(dropbox_url, temp_db.name)
+                        db_path = temp_db.name
+                    
+                    # Connect and search
+                    conn = sqlite3.connect(db_path)
+                    cursor = conn.cursor()
+                    
+                    # Search query with LIKE for partial matches
+                    query = """
+                    SELECT management_id, title, broadcast_date, character_name, dialogue, voice_instruction, row_number
+                    FROM script_lines 
+                    WHERE dialogue LIKE ? OR character_name LIKE ? OR title LIKE ?
+                    ORDER BY row_number LIMIT 50
+                    """
+                    
+                    search_pattern = f'%{keyword}%'
+                    cursor.execute(query, (search_pattern, search_pattern, search_pattern))
+                    results = cursor.fetchall()
+                    conn.close()
+                    
+                    # Clean up temporary file
+                    os.unlink(db_path)
+                    
+                    # Format results
+                    formatted_results = []
+                    for row in results:
+                        formatted_results.append({
+                            'management_id': row[0] or '',
+                            'title': row[1] or '',
+                            'broadcast_date': row[2] or '',
+                            'character_name': row[3] or '',
+                            'dialogue': row[4] or '',
+                            'voice_instruction': row[5] or '',
+                            'row_number': row[6] or 0
+                        })
+                    
+                    response = {
+                        'success': True,
+                        'keyword': keyword,
+                        'results': formatted_results,
+                        'count': len(formatted_results),
+                        'database_info': f'検索対象: 完全なデータベース（258,137行の実際の台本データ）'
                     }
-                ]
-                
-                response = {
-                    'success': True,
-                    'keyword': keyword,
-                    'results': demo_results,
-                    'count': len(demo_results)
-                }
+                    
+                except Exception as db_error:
+                    response = {
+                        'success': False,
+                        'error': f'データベースエラー: {str(db_error)}'
+                    }
             
             # Send response
             response_json = json.dumps(response, ensure_ascii=False)
