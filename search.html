@@ -39,6 +39,14 @@
             <h3 id="resultsHeader" style="margin: 0;"></h3>
             <div style="display: flex; gap: 15px; align-items: center; font-size: 14px;">
                 <div>
+                    <label>絞り込み：</label>
+                    <select id="contentFilter" style="padding: 4px;" onchange="applyFiltering()">
+                        <option value="">すべて</option>
+                        <option value="title">動画タイトルのみ</option>
+                        <option value="dialogue">セリフのみ</option>
+                    </select>
+                </div>
+                <div>
                     <label>並び順：</label>
                     <select id="sortOrderPost" style="padding: 4px;" onchange="applySorting()">
                         <option value="row_number_asc">行番号 (昇順)</option>
@@ -209,11 +217,45 @@
         
         // 検索後のソート機能
         function applySorting() {
+            var contentFilter = document.getElementById('contentFilter').value;
             var sortOrder = document.getElementById('sortOrderPost').value;
-            var sortedResults = sortResults(currentSearchResults, sortOrder);
+            
+            var filteredResults = applyContentFilter(currentSearchResults, contentFilter);
+            var sortedResults = sortResults(filteredResults, sortOrder);
             
             displayResultsList(sortedResults);
-            updateResultsHeader(sortedResults.length);
+            updateResultsHeader(sortedResults.length, contentFilter);
+        }
+        
+        // 検索後のフィルタリング機能
+        function applyFiltering() {
+            var contentFilter = document.getElementById('contentFilter').value;
+            var sortOrder = document.getElementById('sortOrderPost').value;
+            
+            var filteredResults = applyContentFilter(currentSearchResults, contentFilter);
+            var sortedResults = sortResults(filteredResults, sortOrder);
+            
+            displayResultsList(sortedResults);
+            updateResultsHeader(sortedResults.length, contentFilter);
+        }
+        
+        // コンテンツフィルター適用
+        function applyContentFilter(results, contentFilter) {
+            if (!contentFilter) return results;
+            
+            return results.filter(function(result) {
+                var keyword = currentKeyword.toLowerCase();
+                
+                if (contentFilter === 'title') {
+                    // タイトルにキーワードが含まれる場合のみ
+                    return result.title && result.title.toLowerCase().includes(keyword);
+                } else if (contentFilter === 'dialogue') {
+                    // セリフにキーワードが含まれる場合のみ
+                    return result.dialogue && result.dialogue.toLowerCase().includes(keyword);
+                }
+                
+                return true;
+            });
         }
         
         // ソート機能
@@ -276,9 +318,15 @@
         }
         
         // 結果ヘッダーの更新
-        function updateResultsHeader(count) {
+        function updateResultsHeader(count, contentFilter) {
             var headerDiv = document.getElementById('resultsHeader');
-            headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)';
+            var filterInfo = '';
+            if (contentFilter === 'title') {
+                filterInfo = ' | 動画タイトルのみ';
+            } else if (contentFilter === 'dialogue') {
+                filterInfo = ' | セリフのみ';
+            }
+            headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)' + filterInfo;
         }
         
         // ページ読み込み時の認証チェック
