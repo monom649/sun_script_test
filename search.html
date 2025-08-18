@@ -251,10 +251,13 @@
                     return result.title && result.title.toLowerCase().includes(keyword);
                 } else if (contentFilter === 'dialogue_voice_filming') {
                     // セリフ、音声指示、撮影指示のいずれかにキーワードが含まれる場合
-                    // ただし、セリフとタイトルが同じ場合（重複データ）は除外
+                    // 除外条件:
+                    // 1. セリフとタイトルが同じ場合（重複データ）
+                    // 2. 行番号1〜9（タイトル行）
                     var isDialogueMatch = result.dialogue && 
                                         result.dialogue.toLowerCase().includes(keyword) &&
-                                        result.dialogue !== result.title; // 重複除外
+                                        result.dialogue !== result.title && // 重複除外
+                                        (result.row_number > 9); // 行番号1-9はタイトル行として除外
                     
                     var isVoiceMatch = result.voice_instruction && 
                                      result.voice_instruction.toLowerCase().includes(keyword);
