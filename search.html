@@ -47,8 +47,6 @@
                         <option value="management_id_desc">管理ID (降順)</option>
                         <option value="broadcast_date_asc">配信日 (古い順)</option>
                         <option value="broadcast_date_desc">配信日 (新しい順)</option>
-                        <option value="character_name_asc">キャラクター (昇順)</option>
-                        <option value="character_name_desc">キャラクター (降順)</option>
                     </select>
                 </div>
             </div>
@@ -240,12 +238,6 @@
                     break;
                 case 'broadcast_date_desc':
                     sorted.sort((a, b) => (b.broadcast_date || '').localeCompare(a.broadcast_date || ''));
-                    break;
-                case 'character_name_asc':
-                    sorted.sort((a, b) => (a.character_name || '').localeCompare(b.character_name || ''));
-                    break;
-                case 'character_name_desc':
-                    sorted.sort((a, b) => (b.character_name || '').localeCompare(a.character_name || ''));
                     break;
             }
             

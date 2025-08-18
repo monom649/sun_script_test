@@ -79,9 +79,7 @@ class handler(BaseHTTPRequestHandler):
                         'management_id_asc': 'ORDER BY management_id ASC',
                         'management_id_desc': 'ORDER BY management_id DESC',
                         'broadcast_date_asc': 'ORDER BY broadcast_date ASC',
-                        'broadcast_date_desc': 'ORDER BY broadcast_date DESC',
-                        'character_name_asc': 'ORDER BY character_name ASC',
-                        'character_name_desc': 'ORDER BY character_name DESC'
+                        'broadcast_date_desc': 'ORDER BY broadcast_date DESC'
                     }
                     
                     order_clause = sort_map.get(sort_order, 'ORDER BY row_number ASC')
