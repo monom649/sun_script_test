@@ -251,9 +251,18 @@
                     return result.title && result.title.toLowerCase().includes(keyword);
                 } else if (contentFilter === 'dialogue_voice_filming') {
                     // セリフ、音声指示、撮影指示のいずれかにキーワードが含まれる場合
-                    return (result.dialogue && result.dialogue.toLowerCase().includes(keyword)) ||
-                           (result.voice_instruction && result.voice_instruction.toLowerCase().includes(keyword)) ||
-                           (result.filming_instruction && result.filming_instruction.toLowerCase().includes(keyword));
+                    // ただし、セリフとタイトルが同じ場合（重複データ）は除外
+                    var isDialogueMatch = result.dialogue && 
+                                        result.dialogue.toLowerCase().includes(keyword) &&
+                                        result.dialogue !== result.title; // 重複除外
+                    
+                    var isVoiceMatch = result.voice_instruction && 
+                                     result.voice_instruction.toLowerCase().includes(keyword);
+                    
+                    var isFilmingMatch = result.filming_instruction && 
+                                       result.filming_instruction.toLowerCase().includes(keyword);
+                    
+                    return isDialogueMatch || isVoiceMatch || isFilmingMatch;
                 }
                 
                 return true;
