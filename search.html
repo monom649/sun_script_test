@@ -42,8 +42,8 @@
                     <label>絞り込み：</label>
                     <select id="contentFilter" style="padding: 4px;" onchange="applyFiltering()">
                         <option value="">すべて</option>
-                        <option value="title">動画タイトルのみ</option>
-                        <option value="dialogue">セリフのみ</option>
+                        <option value="title">動画タイトル</option>
+                        <option value="dialogue_voice_filming">セリフ + 音声指示 + 撮影指示</option>
                     </select>
                 </div>
                 <div>
@@ -249,9 +249,11 @@
                 if (contentFilter === 'title') {
                     // タイトルにキーワードが含まれる場合のみ
                     return result.title && result.title.toLowerCase().includes(keyword);
-                } else if (contentFilter === 'dialogue') {
-                    // セリフにキーワードが含まれる場合のみ
-                    return result.dialogue && result.dialogue.toLowerCase().includes(keyword);
+                } else if (contentFilter === 'dialogue_voice_filming') {
+                    // セリフ、音声指示、撮影指示のいずれかにキーワードが含まれる場合
+                    return (result.dialogue && result.dialogue.toLowerCase().includes(keyword)) ||
+                           (result.voice_instruction && result.voice_instruction.toLowerCase().includes(keyword)) ||
+                           (result.filming_instruction && result.filming_instruction.toLowerCase().includes(keyword));
                 }
                 
                 return true;
@@ -322,9 +324,9 @@
             var headerDiv = document.getElementById('resultsHeader');
             var filterInfo = '';
             if (contentFilter === 'title') {
-                filterInfo = ' | 動画タイトルのみ';
-            } else if (contentFilter === 'dialogue') {
-                filterInfo = ' | セリフのみ';
+                filterInfo = ' | 動画タイトル';
+            } else if (contentFilter === 'dialogue_voice_filming') {
+                filterInfo = ' | セリフ・音声指示・撮影指示';
             }
             headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)' + filterInfo;
         }
