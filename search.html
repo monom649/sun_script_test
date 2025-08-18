@@ -261,8 +261,11 @@
                     var isInstructionText = result.dialogue && (
                         // 明確な指示語で始まる
                         result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響|SE|ナレーション)/) ||
-                        // 状況説明パターン（〜している、〜する、〜を〜、〜な〜、〜の〜）
-                        result.dialogue.match(/(している|してる|する|を.+|な.+|の.+)$/) ||
+                        // 状況説明パターン
+                        result.dialogue.match(/(している|してる|する)$/) ||
+                        result.dialogue.indexOf('を') > -1 ||
+                        result.dialogue.indexOf('な') > -1 ||
+                        result.dialogue.indexOf('の') > -1 ||
                         // カメラワーク指示
                         result.dialogue.match(/(アップ|引き|寄り|カメラ|ズーム|パン|切り替え)/) ||
                         // 動作指示
