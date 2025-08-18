@@ -88,6 +88,10 @@
                 html += '<div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">';
                 html += '<h4>' + result.title + ' (' + result.management_id + ')</h4>';
                 html += '<p><strong>配信日:</strong> ' + (result.broadcast_date || 'なし') + '</p>';
+                if (result.script_url) {
+                    html += '<p><strong>台本URL:</strong> <a href="' + result.script_url + '" target="_blank" style="color: #007bff;">📋 台本を開く</a></p>';
+                }
+                html += '<p><strong>行番号:</strong> ' + (result.row_number || 'なし') + '</p>';
                 html += '<p><strong>キャラクター:</strong> ' + (result.character_name || 'なし') + '</p>';
                 html += '<p><strong>セリフ:</strong> ' + (result.dialogue || 'なし') + '</p>';
                 if (result.voice_instruction) {
