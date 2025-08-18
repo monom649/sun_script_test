@@ -17,31 +17,6 @@
             
             <div style="display: flex; gap: 15px; align-items: center; font-size: 14px;">
                 <div>
-                    <label>キャラクター絞り込み：</label>
-                    <select id="characterFilter" style="padding: 4px;">
-                        <option value="">すべて</option>
-                        <option value="サンサン">サンサン</option>
-                        <option value="くもりん">くもりん</option>
-                        <option value="おかあさん">おかあさん</option>
-                        <option value="ナレーション">ナレーション</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label>並び順：</label>
-                    <select id="sortOrder" style="padding: 4px;">
-                        <option value="row_number_asc">行番号 (昇順)</option>
-                        <option value="row_number_desc">行番号 (降順)</option>
-                        <option value="management_id_asc">管理ID (昇順)</option>
-                        <option value="management_id_desc">管理ID (降順)</option>
-                        <option value="broadcast_date_asc">配信日 (古い順)</option>
-                        <option value="broadcast_date_desc">配信日 (新しい順)</option>
-                        <option value="character_name_asc">キャラクター (昇順)</option>
-                        <option value="character_name_desc">キャラクター (降順)</option>
-                    </select>
-                </div>
-                
-                <div>
                     <label>件数：</label>
                     <select id="limitResults" style="padding: 4px;">
                         <option value="20">20件</option>
@@ -60,17 +35,41 @@
     </div>
     
     <div id="results" style="display: none;">
-        <h3 id="resultsHeader"></h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            <h3 id="resultsHeader" style="margin: 0;"></h3>
+            <div style="display: flex; gap: 15px; align-items: center; font-size: 14px;">
+                <div>
+                    <label>並び順：</label>
+                    <select id="sortOrderPost" style="padding: 4px;" onchange="applySorting()">
+                        <option value="row_number_asc">行番号 (昇順)</option>
+                        <option value="row_number_desc">行番号 (降順)</option>
+                        <option value="management_id_asc">管理ID (昇順)</option>
+                        <option value="management_id_desc">管理ID (降順)</option>
+                        <option value="broadcast_date_asc">配信日 (古い順)</option>
+                        <option value="broadcast_date_desc">配信日 (新しい順)</option>
+                        <option value="character_name_asc">キャラクター (昇順)</option>
+                        <option value="character_name_desc">キャラクター (降順)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>キャラクター絞り込み：</label>
+                    <select id="characterFilterPost" style="padding: 4px;" onchange="applyFiltering()">
+                        <option value="">すべて</option>
+                    </select>
+                </div>
+            </div>
+        </div>
         <div id="resultsList"></div>
     </div>
     
     <div id="error" style="display: none; color: red;"></div>
 
     <script>
+        let currentSearchResults = [];
+        let currentKeyword = '';
+        
         async function performSearch() {
             var keyword = document.getElementById('keyword').value.trim();
-            var characterFilter = document.getElementById('characterFilter').value;
-            var sortOrder = document.getElementById('sortOrder').value;
             var limit = document.getElementById('limitResults').value;
             
             if (!keyword) {
@@ -82,7 +81,7 @@
             showLoading();
             
             try {
-                console.log('検索リクエスト開始:', { keyword, characterFilter, sortOrder, limit });
+                console.log('検索リクエスト開始:', { keyword, limit });
                 
                 var response = await fetch('/api/search', {
                     method: 'POST',
@@ -91,8 +90,8 @@
                     },
                     body: JSON.stringify({
                         keyword: keyword,
-                        character_filter: characterFilter,
-                        sort_order: sortOrder,
+                        character_filter: '',
+                        sort_order: 'row_number_asc',
                         limit: parseInt(limit)
                     })
                 });
@@ -107,7 +106,10 @@
                 console.log('レスポンスデータ:', data);
                 
                 if (data.success) {
+                    currentSearchResults = data.results;
+                    currentKeyword = keyword;
                     displayResults(data);
+                    populateCharacterFilter(data.results);
                 } else {
                     showError('エラー: ' + data.error);
                 }
@@ -125,11 +127,7 @@
             var headerDiv = document.getElementById('resultsHeader');
             var listDiv = document.getElementById('resultsList');
             
-            var filterInfo = '';
-            if (data.character_filter) {
-                filterInfo += ' | キャラクター: ' + data.character_filter;
-            }
-            headerDiv.innerHTML = '検索結果: "' + data.keyword + '" (' + data.count + '件)' + filterInfo;
+            headerDiv.innerHTML = '検索結果: "' + data.keyword + '" (' + data.count + '件)';
             
             var html = '';
             for (var i = 0; i < data.results.length; i++) {
@@ -217,6 +215,135 @@
                 performSearch();
             }
         });
+        
+        // 検索後のキャラクターフィルター作成
+        function populateCharacterFilter(results) {
+            var characterSet = new Set();
+            results.forEach(function(result) {
+                if (result.character_name && result.character_name.trim()) {
+                    characterSet.add(result.character_name.trim());
+                }
+            });
+            
+            var filterSelect = document.getElementById('characterFilterPost');
+            // Clear existing options except "すべて"
+            filterSelect.innerHTML = '<option value="">すべて</option>';
+            
+            // Add character options
+            Array.from(characterSet).sort().forEach(function(character) {
+                var option = document.createElement('option');
+                option.value = character;
+                option.textContent = character;
+                filterSelect.appendChild(option);
+            });
+        }
+        
+        // 検索後のソート機能
+        function applySorting() {
+            var sortOrder = document.getElementById('sortOrderPost').value;
+            var characterFilter = document.getElementById('characterFilterPost').value;
+            
+            var filteredResults = applyCharacterFilter(currentSearchResults, characterFilter);
+            var sortedResults = sortResults(filteredResults, sortOrder);
+            
+            displayResultsList(sortedResults);
+            updateResultsHeader(sortedResults.length, characterFilter);
+        }
+        
+        // 検索後のフィルタリング機能
+        function applyFiltering() {
+            var characterFilter = document.getElementById('characterFilterPost').value;
+            var sortOrder = document.getElementById('sortOrderPost').value;
+            
+            var filteredResults = applyCharacterFilter(currentSearchResults, characterFilter);
+            var sortedResults = sortResults(filteredResults, sortOrder);
+            
+            displayResultsList(sortedResults);
+            updateResultsHeader(sortedResults.length, characterFilter);
+        }
+        
+        // キャラクターフィルター適用
+        function applyCharacterFilter(results, characterFilter) {
+            if (!characterFilter) return results;
+            return results.filter(function(result) {
+                return result.character_name && result.character_name.includes(characterFilter);
+            });
+        }
+        
+        // ソート機能
+        function sortResults(results, sortOrder) {
+            var sorted = [...results];
+            
+            switch(sortOrder) {
+                case 'row_number_asc':
+                    sorted.sort((a, b) => (a.row_number || 0) - (b.row_number || 0));
+                    break;
+                case 'row_number_desc':
+                    sorted.sort((a, b) => (b.row_number || 0) - (a.row_number || 0));
+                    break;
+                case 'management_id_asc':
+                    sorted.sort((a, b) => (a.management_id || '').localeCompare(b.management_id || ''));
+                    break;
+                case 'management_id_desc':
+                    sorted.sort((a, b) => (b.management_id || '').localeCompare(a.management_id || ''));
+                    break;
+                case 'broadcast_date_asc':
+                    sorted.sort((a, b) => (a.broadcast_date || '').localeCompare(b.broadcast_date || ''));
+                    break;
+                case 'broadcast_date_desc':
+                    sorted.sort((a, b) => (b.broadcast_date || '').localeCompare(a.broadcast_date || ''));
+                    break;
+                case 'character_name_asc':
+                    sorted.sort((a, b) => (a.character_name || '').localeCompare(b.character_name || ''));
+                    break;
+                case 'character_name_desc':
+                    sorted.sort((a, b) => (b.character_name || '').localeCompare(a.character_name || ''));
+                    break;
+            }
+            
+            return sorted;
+        }
+        
+        // 結果一覧の表示
+        function displayResultsList(results) {
+            var listDiv = document.getElementById('resultsList');
+            
+            var html = '';
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+                html += '<div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">';
+                html += '<h4>' + result.title + ' (' + result.management_id + ')</h4>';
+                html += '<p><strong>配信日:</strong> ' + (result.broadcast_date || 'なし') + '</p>';
+                if (result.script_url) {
+                    html += '<p><strong>台本URL:</strong> <a href="' + result.script_url + '" target="_blank" style="color: #007bff;">📋 台本を開く</a></p>';
+                }
+                html += '<p><strong>行番号:</strong> ' + (result.row_number || 'なし') + '</p>';
+                html += '<p><strong>キャラクター:</strong> ' + (result.character_name || 'なし') + '</p>';
+                html += '<p><strong>セリフ:</strong> ' + (result.dialogue || 'なし') + '</p>';
+                if (result.voice_instruction) {
+                    html += '<p><strong>音声指示:</strong> ' + result.voice_instruction + '</p>';
+                }
+                if (result.filming_instruction) {
+                    html += '<p><strong>撮影指示:</strong> ' + result.filming_instruction + '</p>';
+                }
+                if (result.editing_instruction) {
+                    html += '<p><strong>編集指示:</strong> ' + result.editing_instruction + '</p>';
+                }
+                html += '</div>';
+            }
+            
+            listDiv.innerHTML = html;
+        }
+        
+        // 結果ヘッダーの更新
+        function updateResultsHeader(count, characterFilter) {
+            var headerDiv = document.getElementById('resultsHeader');
+            var filterInfo = '';
+            if (characterFilter) {
+                filterInfo = ' | キャラクター: ' + characterFilter;
+            }
+            headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)' + filterInfo;
+        }
         
         // ページ読み込み時の認証チェック
         document.addEventListener('DOMContentLoaded', function() {
