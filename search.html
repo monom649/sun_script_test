@@ -275,7 +275,7 @@
                                         result.dialogue.toLowerCase().includes(keyword) &&
                                         result.dialogue !== result.title && // 重複除外
                                         (result.row_number > 3) && // 行番号1-3はタイトル行として除外
-                                        (hasCharacterName && !isInstructionText); // キャラ名があって指示文でない場合のみ
+                                        (hasCharacterName || !isInstructionText); // キャラ名がある場合は必ずセリフ、ない場合は指示文でなければOK
                     
                     var isVoiceMatch = result.voice_instruction && 
                                      result.voice_instruction.toLowerCase().includes(keyword);
