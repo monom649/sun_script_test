@@ -252,10 +252,16 @@
                     // 除外条件:
                     // 1. セリフとタイトルが同じ場合（重複データ）
                     // 2. 行番号1〜3（タイトル行）
+                    // セリフ判定の優先順位：
+                    // - キャラクター名がある場合は高確率でセリフ
+                    // - それ以外は台本構造により指示の可能性もある
+                    var hasCharacterName = result.character_name && result.character_name.trim().length > 0;
                     var isDialogueMatch = result.dialogue && 
                                         result.dialogue.toLowerCase().includes(keyword) &&
                                         result.dialogue !== result.title && // 重複除外
-                                        (result.row_number > 3); // 行番号1-3はタイトル行として除外
+                                        (result.row_number > 3) && // 行番号1-3はタイトル行として除外
+                                        (hasCharacterName || 
+                                         !result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響)/)); // 明らかな指示語を除外
                     
                     var isVoiceMatch = result.voice_instruction && 
                                      result.voice_instruction.toLowerCase().includes(keyword);
