@@ -256,12 +256,26 @@
                     // - キャラクター名がある場合は高確率でセリフ
                     // - それ以外は台本構造により指示の可能性もある
                     var hasCharacterName = result.character_name && result.character_name.trim().length > 0;
+                    
+                    // より厳密な指示文判定
+                    var isInstructionText = result.dialogue && (
+                        // 明確な指示語で始まる
+                        result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響|SE|ナレーション)/) ||
+                        // 状況説明パターン（〜している、〜する、〜を〜、〜な〜、〜の〜）
+                        result.dialogue.match(/(している|してる|する|を.+|な.+|の.+)$/) ||
+                        // カメラワーク指示
+                        result.dialogue.match(/(アップ|引き|寄り|カメラ|ズーム|パン|切り替え)/) ||
+                        // 動作指示
+                        result.dialogue.match(/(置く|掴む|持つ|見せる|動かす|入れる|出す)/) ||
+                        // 時間・場面指示
+                        result.dialogue.match(/(シーン|回想|フラッシュ|切り替わ|場面)/)
+                    );
+                    
                     var isDialogueMatch = result.dialogue && 
                                         result.dialogue.toLowerCase().includes(keyword) &&
                                         result.dialogue !== result.title && // 重複除外
                                         (result.row_number > 3) && // 行番号1-3はタイトル行として除外
-                                        (hasCharacterName || 
-                                         !result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響)/)); // 明らかな指示語を除外
+                                        (hasCharacterName && !isInstructionText); // キャラ名があって指示文でない場合のみ
                     
                     var isVoiceMatch = result.voice_instruction && 
                                      result.voice_instruction.toLowerCase().includes(keyword);
