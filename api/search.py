@@ -35,7 +35,7 @@ class handler(BaseHTTPRequestHandler):
             # Get search parameters
             keyword = data.get('keyword', '').strip()
             character_filter = data.get('character_filter', '').strip()
-            sort_order = data.get('sort_order', 'row_number_asc')
+            sort_order = data.get('sort_order', 'management_id_asc')
             limit = data.get('limit', 50)
             
             if not keyword:
@@ -74,15 +74,13 @@ class handler(BaseHTTPRequestHandler):
                     
                     # Add sorting
                     sort_map = {
-                        'row_number_asc': 'ORDER BY row_number ASC',
-                        'row_number_desc': 'ORDER BY row_number DESC',
                         'management_id_asc': 'ORDER BY management_id ASC',
                         'management_id_desc': 'ORDER BY management_id DESC',
                         'broadcast_date_asc': 'ORDER BY broadcast_date ASC',
                         'broadcast_date_desc': 'ORDER BY broadcast_date DESC'
                     }
                     
-                    order_clause = sort_map.get(sort_order, 'ORDER BY row_number ASC')
+                    order_clause = sort_map.get(sort_order, 'ORDER BY management_id ASC')
                     base_query += f" {order_clause} LIMIT ?"
                     query_params.append(limit)
                     

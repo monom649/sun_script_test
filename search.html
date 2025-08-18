@@ -49,8 +49,6 @@
                 <div>
                     <label>並び順：</label>
                     <select id="sortOrderPost" style="padding: 4px;" onchange="applySorting()">
-                        <option value="row_number_asc">行番号 (昇順)</option>
-                        <option value="row_number_desc">行番号 (降順)</option>
                         <option value="management_id_asc">管理ID (昇順)</option>
                         <option value="management_id_desc">管理ID (降順)</option>
                         <option value="broadcast_date_asc">配信日 (古い順)</option>
@@ -91,7 +89,7 @@
                     body: JSON.stringify({
                         keyword: keyword,
                         character_filter: '',
-                        sort_order: 'row_number_asc',
+                        sort_order: 'management_id_asc',
                         limit: parseInt(limit)
                     })
                 });
@@ -277,12 +275,6 @@
             var sorted = [...results];
             
             switch(sortOrder) {
-                case 'row_number_asc':
-                    sorted.sort((a, b) => (a.row_number || 0) - (b.row_number || 0));
-                    break;
-                case 'row_number_desc':
-                    sorted.sort((a, b) => (b.row_number || 0) - (a.row_number || 0));
-                    break;
                 case 'management_id_asc':
                     sorted.sort((a, b) => (a.management_id || '').localeCompare(b.management_id || ''));
                     break;
