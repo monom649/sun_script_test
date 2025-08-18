@@ -1,19 +1,13 @@
 {
-  "version": 2,
-  "name": "sunsun-auth-search-v2",
   "functions": {
     "api/search.py": {
       "runtime": "python3.9"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/search",
-      "dest": "/search.html"
+      "source": "/search",
+      "destination": "/search.html"
     }
   ],
   "headers": [
