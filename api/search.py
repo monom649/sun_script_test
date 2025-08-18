@@ -32,8 +32,11 @@ class handler(BaseHTTPRequestHandler):
             else:
                 data = {}
             
-            # Get keyword
+            # Get search parameters
             keyword = data.get('keyword', '').strip()
+            character_filter = data.get('character_filter', '').strip()
+            sort_order = data.get('sort_order', 'row_number_asc')
+            limit = data.get('limit', 50)
             
             if not keyword:
                 response = {
@@ -55,16 +58,37 @@ class handler(BaseHTTPRequestHandler):
                     conn = sqlite3.connect(db_path)
                     cursor = conn.cursor()
                     
-                    # Search query with LIKE for partial matches
-                    query = """
+                    # Build dynamic query
+                    base_query = """
                     SELECT management_id, title, broadcast_date, character_name, dialogue, voice_instruction, filming_instruction, editing_instruction, script_url, row_number
                     FROM script_lines 
-                    WHERE dialogue LIKE ? OR character_name LIKE ? OR title LIKE ?
-                    ORDER BY row_number LIMIT 50
+                    WHERE (dialogue LIKE ? OR character_name LIKE ? OR title LIKE ?)
                     """
                     
-                    search_pattern = f'%{keyword}%'
-                    cursor.execute(query, (search_pattern, search_pattern, search_pattern))
+                    query_params = [f'%{keyword}%', f'%{keyword}%', f'%{keyword}%']
+                    
+                    # Add character filter
+                    if character_filter:
+                        base_query += " AND character_name LIKE ?"
+                        query_params.append(f'%{character_filter}%')
+                    
+                    # Add sorting
+                    sort_map = {
+                        'row_number_asc': 'ORDER BY row_number ASC',
+                        'row_number_desc': 'ORDER BY row_number DESC',
+                        'management_id_asc': 'ORDER BY management_id ASC',
+                        'management_id_desc': 'ORDER BY management_id DESC',
+                        'broadcast_date_asc': 'ORDER BY broadcast_date ASC',
+                        'broadcast_date_desc': 'ORDER BY broadcast_date DESC',
+                        'character_name_asc': 'ORDER BY character_name ASC',
+                        'character_name_desc': 'ORDER BY character_name DESC'
+                    }
+                    
+                    order_clause = sort_map.get(sort_order, 'ORDER BY row_number ASC')
+                    base_query += f" {order_clause} LIMIT ?"
+                    query_params.append(limit)
+                    
+                    cursor.execute(base_query, query_params)
                     results = cursor.fetchall()
                     conn.close()
                     
@@ -90,6 +114,9 @@ class handler(BaseHTTPRequestHandler):
                     response = {
                         'success': True,
                         'keyword': keyword,
+                        'character_filter': character_filter,
+                        'sort_order': sort_order,
+                        'limit': limit,
                         'results': formatted_results,
                         'count': len(formatted_results),
                         'database_info': f'検索対象: 完全なデータベース（258,137行の実際の台本データ）'
