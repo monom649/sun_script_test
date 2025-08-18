@@ -51,12 +51,6 @@
                         <option value="character_name_desc">キャラクター (降順)</option>
                     </select>
                 </div>
-                <div>
-                    <label>キャラクター絞り込み：</label>
-                    <select id="characterFilterPost" style="padding: 4px;" onchange="applyFiltering()">
-                        <option value="">すべて</option>
-                    </select>
-                </div>
             </div>
         </div>
         <div id="resultsList"></div>
@@ -109,7 +103,6 @@
                     currentSearchResults = data.results;
                     currentKeyword = keyword;
                     displayResults(data);
-                    populateCharacterFilter(data.results);
                 } else {
                     showError('エラー: ' + data.error);
                 }
@@ -216,58 +209,13 @@
             }
         });
         
-        // 検索後のキャラクターフィルター作成
-        function populateCharacterFilter(results) {
-            var characterSet = new Set();
-            results.forEach(function(result) {
-                if (result.character_name && result.character_name.trim()) {
-                    characterSet.add(result.character_name.trim());
-                }
-            });
-            
-            var filterSelect = document.getElementById('characterFilterPost');
-            // Clear existing options except "すべて"
-            filterSelect.innerHTML = '<option value="">すべて</option>';
-            
-            // Add character options
-            Array.from(characterSet).sort().forEach(function(character) {
-                var option = document.createElement('option');
-                option.value = character;
-                option.textContent = character;
-                filterSelect.appendChild(option);
-            });
-        }
-        
         // 検索後のソート機能
         function applySorting() {
             var sortOrder = document.getElementById('sortOrderPost').value;
-            var characterFilter = document.getElementById('characterFilterPost').value;
-            
-            var filteredResults = applyCharacterFilter(currentSearchResults, characterFilter);
-            var sortedResults = sortResults(filteredResults, sortOrder);
+            var sortedResults = sortResults(currentSearchResults, sortOrder);
             
             displayResultsList(sortedResults);
-            updateResultsHeader(sortedResults.length, characterFilter);
-        }
-        
-        // 検索後のフィルタリング機能
-        function applyFiltering() {
-            var characterFilter = document.getElementById('characterFilterPost').value;
-            var sortOrder = document.getElementById('sortOrderPost').value;
-            
-            var filteredResults = applyCharacterFilter(currentSearchResults, characterFilter);
-            var sortedResults = sortResults(filteredResults, sortOrder);
-            
-            displayResultsList(sortedResults);
-            updateResultsHeader(sortedResults.length, characterFilter);
-        }
-        
-        // キャラクターフィルター適用
-        function applyCharacterFilter(results, characterFilter) {
-            if (!characterFilter) return results;
-            return results.filter(function(result) {
-                return result.character_name && result.character_name.includes(characterFilter);
-            });
+            updateResultsHeader(sortedResults.length);
         }
         
         // ソート機能
@@ -336,13 +284,9 @@
         }
         
         // 結果ヘッダーの更新
-        function updateResultsHeader(count, characterFilter) {
+        function updateResultsHeader(count) {
             var headerDiv = document.getElementById('resultsHeader');
-            var filterInfo = '';
-            if (characterFilter) {
-                filterInfo = ' | キャラクター: ' + characterFilter;
-            }
-            headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)' + filterInfo;
+            headerDiv.innerHTML = '検索結果: "' + currentKeyword + '" (' + count + '件)';
         }
         
         // ページ読み込み時の認証チェック
