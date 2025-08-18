@@ -57,7 +57,7 @@ class handler(BaseHTTPRequestHandler):
                     
                     # Search query with LIKE for partial matches
                     query = """
-                    SELECT management_id, title, broadcast_date, character_name, dialogue, voice_instruction, row_number
+                    SELECT management_id, title, broadcast_date, character_name, dialogue, voice_instruction, filming_instruction, editing_instruction, row_number
                     FROM script_lines 
                     WHERE dialogue LIKE ? OR character_name LIKE ? OR title LIKE ?
                     ORDER BY row_number LIMIT 50
@@ -81,7 +81,9 @@ class handler(BaseHTTPRequestHandler):
                             'character_name': row[3] or '',
                             'dialogue': row[4] or '',
                             'voice_instruction': row[5] or '',
-                            'row_number': row[6] or 0
+                            'filming_instruction': row[6] or '',
+                            'editing_instruction': row[7] or '',
+                            'row_number': row[8] or 0
                         })
                     
                     response = {

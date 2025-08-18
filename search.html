@@ -87,9 +87,18 @@
                 var result = data.results[i];
                 html += '<div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">';
                 html += '<h4>' + result.title + ' (' + result.management_id + ')</h4>';
-                html += '<p><strong>キャラ:</strong> ' + (result.character_name || 'なし') + '</p>';
-                html += '<p><strong>セリフ:</strong> ' + result.dialogue + '</p>';
-                html += '<p><strong>配信日:</strong> ' + result.broadcast_date + '</p>';
+                html += '<p><strong>配信日:</strong> ' + (result.broadcast_date || 'なし') + '</p>';
+                html += '<p><strong>キャラクター:</strong> ' + (result.character_name || 'なし') + '</p>';
+                html += '<p><strong>セリフ:</strong> ' + (result.dialogue || 'なし') + '</p>';
+                if (result.voice_instruction) {
+                    html += '<p><strong>音声指示:</strong> ' + result.voice_instruction + '</p>';
+                }
+                if (result.filming_instruction) {
+                    html += '<p><strong>撮影指示:</strong> ' + result.filming_instruction + '</p>';
+                }
+                if (result.editing_instruction) {
+                    html += '<p><strong>編集指示:</strong> ' + result.editing_instruction + '</p>';
+                }
                 html += '</div>';
             }
             
