@@ -59,54 +59,56 @@ class handler(BaseHTTPRequestHandler):
                     cursor = conn.cursor()
                     
                     # Build dynamic query for reorganized database
-                    # Search across all content types and join with scripts table
+                    # Use UNION approach for simpler query structure
                     base_query = """
-                    SELECT s.management_id, s.title, s.broadcast_date, 
-                           COALESCE(cd.character_name, '') as character_name,
-                           COALESCE(cd.dialogue_text, sd.description_text, ve.effect_description, ai.audio_description, tn.note_text, '') as dialogue,
-                           COALESCE(cd.voice_instruction, '') as voice_instruction,
-                           COALESCE(sd.filming_instruction, '') as filming_instruction,
-                           '' as editing_instruction,
-                           s.script_url,
-                           COALESCE(cd.row_number, sd.row_number, ve.row_number, ai.row_number, tn.row_number, 0) as row_number,
-                           CASE 
-                               WHEN cd.id IS NOT NULL THEN 'dialogue'
-                               WHEN sd.id IS NOT NULL THEN 'scene_description'
-                               WHEN ve.id IS NOT NULL THEN 'visual_effect'
-                               WHEN ai.id IS NOT NULL THEN 'audio_instruction'
-                               WHEN tn.id IS NOT NULL THEN 'technical_note'
-                               ELSE 'title'
-                           END as content_type
-                    FROM scripts s
-                    LEFT JOIN character_dialogue cd ON s.id = cd.script_id
-                    LEFT JOIN scene_descriptions sd ON s.id = sd.script_id
-                    LEFT JOIN visual_effects ve ON s.id = ve.script_id
-                    LEFT JOIN audio_instructions ai ON s.id = ai.script_id
-                    LEFT JOIN technical_notes tn ON s.id = tn.script_id
-                    WHERE (s.title LIKE ? OR 
-                           cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR
-                           sd.description_text LIKE ? OR
-                           ve.effect_description LIKE ? OR
-                           ai.audio_description LIKE ? OR
-                           tn.note_text LIKE ?)
+                    SELECT management_id, title, broadcast_date, character_name, dialogue_text as dialogue, 
+                           voice_instruction, '' as filming_instruction, '' as editing_instruction, 
+                           script_url, row_number, 'dialogue' as content_type
+                    FROM character_dialogue cd
+                    JOIN scripts s ON cd.script_id = s.id
+                    WHERE cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?
+                    
+                    UNION ALL
+                    
+                    SELECT management_id, title, broadcast_date, '' as character_name, description_text as dialogue,
+                           '' as voice_instruction, filming_instruction, '' as editing_instruction,
+                           script_url, row_number, 'scene_description' as content_type
+                    FROM scene_descriptions sd
+                    JOIN scripts s ON sd.script_id = s.id
+                    WHERE sd.description_text LIKE ? OR s.title LIKE ?
+                    
+                    UNION ALL
+                    
+                    SELECT management_id, title, broadcast_date, '' as character_name, effect_description as dialogue,
+                           '' as voice_instruction, '' as filming_instruction, '' as editing_instruction,
+                           script_url, row_number, 'visual_effect' as content_type
+                    FROM visual_effects ve
+                    JOIN scripts s ON ve.script_id = s.id
+                    WHERE ve.effect_description LIKE ? OR s.title LIKE ?
                     """
                     
-                    query_params = [f'%{keyword}%'] * 7  # 7 parameters for the 7 LIKE conditions
+                    query_params = [f'%{keyword}%', f'%{keyword}%', f'%{keyword}%',  # dialogue section
+                                   f'%{keyword}%', f'%{keyword}%',  # scene description section  
+                                   f'%{keyword}%', f'%{keyword}%']  # visual effects section
                     
-                    # Add character filter
+                    # Add character filter (only applies to dialogue section)
                     if character_filter:
-                        base_query += " AND cd.character_name LIKE ?"
-                        query_params.append(f'%{character_filter}%')
+                        # Modify the first WHERE clause in the UNION query
+                        base_query = base_query.replace(
+                            "WHERE cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?",
+                            "WHERE (cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?) AND cd.character_name LIKE ?"
+                        )
+                        query_params.insert(3, f'%{character_filter}%')  # Insert after first 3 params
                     
                     # Add sorting
                     sort_map = {
-                        'management_id_asc': 'ORDER BY s.management_id ASC, row_number ASC',
-                        'management_id_desc': 'ORDER BY s.management_id DESC, row_number ASC',
-                        'broadcast_date_asc': 'ORDER BY s.broadcast_date ASC, s.management_id ASC, row_number ASC',
-                        'broadcast_date_desc': 'ORDER BY s.broadcast_date DESC, s.management_id ASC, row_number ASC'
+                        'management_id_asc': 'ORDER BY management_id ASC, row_number ASC',
+                        'management_id_desc': 'ORDER BY management_id DESC, row_number ASC',
+                        'broadcast_date_asc': 'ORDER BY broadcast_date ASC, management_id ASC, row_number ASC',
+                        'broadcast_date_desc': 'ORDER BY broadcast_date DESC, management_id ASC, row_number ASC'
                     }
                     
-                    order_clause = sort_map.get(sort_order, 'ORDER BY s.management_id ASC, row_number ASC')
+                    order_clause = sort_map.get(sort_order, 'ORDER BY management_id ASC, row_number ASC')
                     base_query += f" {order_clause} LIMIT ?"
                     query_params.append(limit)
                     
