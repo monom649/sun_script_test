@@ -248,49 +248,12 @@
                     // タイトルにキーワードが含まれる場合のみ
                     return result.title && result.title.toLowerCase().includes(keyword);
                 } else if (contentFilter === 'dialogue_voice_filming') {
-                    // セリフ、音声指示、撮影指示のいずれかにキーワードが含まれる場合
-                    // 除外条件:
-                    // 1. セリフとタイトルが同じ場合（重複データ）
-                    // 2. 行番号1〜3（タイトル行）
-                    // セリフ判定の優先順位：
-                    // - キャラクター名がある場合は高確率でセリフ
-                    // - それ以外は台本構造により指示の可能性もある
-                    var hasCharacterName = result.character_name && result.character_name.trim().length > 0;
-                    
-                    // より厳密な指示文判定
-                    var isInstructionText = result.dialogue && (
-                        // 明確な指示語で始まる
-                        result.dialogue.match(/^(テロップ|BGM|エフェクト|カット|撮影|編集|音響|SE|ナレーション)/) ||
-                        // 状況説明パターン（動詞で終わる）
-                        result.dialogue.match(/(している|してる|する)$/) ||
-                        result.dialogue.indexOf('を') > -1 ||
-                        result.dialogue.indexOf('な') > -1 ||
-                        result.dialogue.indexOf('の') > -1 ||
-                        // パイプ記号による状況説明（キャラ名 | 状況）
-                        result.dialogue.indexOf('|') > -1 ||
-                        // 「で」を含む状況説明
-                        result.dialogue.indexOf('で') > -1 ||
-                        // カメラワーク指示
-                        result.dialogue.match(/(アップ|引き|寄り|カメラ|ズーム|パン|切り替え)/) ||
-                        // 動作指示
-                        result.dialogue.match(/(置く|掴む|持つ|見せる|動かす|入れる|出す)/) ||
-                        // 時間・場面指示
-                        result.dialogue.match(/(シーン|回想|フラッシュ|切り替わ|場面)/)
-                    );
-                    
-                    var isDialogueMatch = result.dialogue && 
-                                        result.dialogue.toLowerCase().includes(keyword) &&
-                                        result.dialogue !== result.title && // 重複除外
-                                        (result.row_number > 3) && // 行番号1-3はタイトル行として除外
-                                        !isInstructionText; // 指示文でない場合のみセリフとして扱う（キャラ名の有無に関係なく）
-                    
-                    var isVoiceMatch = result.voice_instruction && 
-                                     result.voice_instruction.toLowerCase().includes(keyword);
-                    
-                    var isFilmingMatch = result.filming_instruction && 
-                                       result.filming_instruction.toLowerCase().includes(keyword);
-                    
-                    return isDialogueMatch || isVoiceMatch || isFilmingMatch;
+                    // 新しいデータベース構造では content_type で判定可能
+                    return result.content_type === 'dialogue' || 
+                           result.content_type === 'audio_instruction' ||
+                           result.content_type === 'visual_effect' ||
+                           (result.voice_instruction && result.voice_instruction.toLowerCase().includes(keyword)) ||
+                           (result.filming_instruction && result.filming_instruction.toLowerCase().includes(keyword));
                 }
                 
                 return true;
