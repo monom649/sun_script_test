@@ -58,15 +58,12 @@ class handler(BaseHTTPRequestHandler):
                     conn = sqlite3.connect(db_path)
                     cursor = conn.cursor()
                     
-                    # Simple query for character dialogue only (new organized database)
+                    # Build dynamic query - only search actual character dialogue
                     base_query = """
-                    SELECT s.management_id, s.title, s.broadcast_date, 
-                           cd.character_name, cd.dialogue_text as dialogue,
-                           cd.voice_instruction, '' as filming_instruction, '' as editing_instruction,
-                           s.script_url, cd.row_number
+                    SELECT s.management_id, s.title, s.broadcast_date, cd.character_name, cd.dialogue_text, cd.voice_instruction, '', '', s.script_url, cd.row_number
                     FROM character_dialogue cd
                     JOIN scripts s ON cd.script_id = s.id
-                    WHERE cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?
+                    WHERE (cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?)
                     """
                     
                     query_params = [f'%{keyword}%', f'%{keyword}%', f'%{keyword}%']
@@ -78,13 +75,13 @@ class handler(BaseHTTPRequestHandler):
                     
                     # Add sorting
                     sort_map = {
-                        'management_id_asc': 'ORDER BY s.management_id ASC, cd.row_number ASC',
-                        'management_id_desc': 'ORDER BY s.management_id DESC, cd.row_number ASC',
-                        'broadcast_date_asc': 'ORDER BY s.broadcast_date ASC, s.management_id ASC, cd.row_number ASC',
-                        'broadcast_date_desc': 'ORDER BY s.broadcast_date DESC, s.management_id ASC, cd.row_number ASC'
+                        'management_id_asc': 'ORDER BY s.management_id ASC',
+                        'management_id_desc': 'ORDER BY s.management_id DESC',
+                        'broadcast_date_asc': 'ORDER BY s.broadcast_date ASC',
+                        'broadcast_date_desc': 'ORDER BY s.broadcast_date DESC'
                     }
                     
-                    order_clause = sort_map.get(sort_order, 'ORDER BY s.management_id ASC, cd.row_number ASC')
+                    order_clause = sort_map.get(sort_order, 'ORDER BY s.management_id ASC')
                     base_query += f" {order_clause} LIMIT ?"
                     query_params.append(limit)
                     
@@ -108,8 +105,7 @@ class handler(BaseHTTPRequestHandler):
                             'filming_instruction': row[6] or '',
                             'editing_instruction': row[7] or '',
                             'script_url': row[8] or '',
-                            'row_number': row[9] or 0,
-                            'content_type': 'dialogue'
+                            'row_number': row[9] or 0
                         })
                     
                     response = {
@@ -120,7 +116,7 @@ class handler(BaseHTTPRequestHandler):
                         'limit': limit,
                         'results': formatted_results,
                         'count': len(formatted_results),
-                        'database_info': f'検索対象: 整理済みデータベース（実際のセリフのみ）'
+                        'database_info': f'検索対象: 完全なデータベース（258,137行の実際の台本データ）'
                     }
                     
                 except Exception as db_error:
