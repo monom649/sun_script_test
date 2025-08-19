@@ -58,30 +58,29 @@ class handler(BaseHTTPRequestHandler):
                     conn = sqlite3.connect(db_path)
                     cursor = conn.cursor()
                     
-                    # Build dynamic query - only search actual character dialogue
+                    # Build dynamic query
                     base_query = """
-                    SELECT s.management_id, s.title, s.broadcast_date, cd.character_name, cd.dialogue_text, cd.voice_instruction, '', '', s.script_url, cd.row_number
-                    FROM character_dialogue cd
-                    JOIN scripts s ON cd.script_id = s.id
-                    WHERE (cd.dialogue_text LIKE ? OR cd.character_name LIKE ? OR s.title LIKE ?)
+                    SELECT management_id, title, broadcast_date, character_name, dialogue, voice_instruction, filming_instruction, editing_instruction, script_url, row_number
+                    FROM script_lines 
+                    WHERE (dialogue LIKE ? OR character_name LIKE ? OR title LIKE ?)
                     """
                     
                     query_params = [f'%{keyword}%', f'%{keyword}%', f'%{keyword}%']
                     
                     # Add character filter
                     if character_filter:
-                        base_query += " AND cd.character_name LIKE ?"
+                        base_query += " AND character_name LIKE ?"
                         query_params.append(f'%{character_filter}%')
                     
                     # Add sorting
                     sort_map = {
-                        'management_id_asc': 'ORDER BY s.management_id ASC',
-                        'management_id_desc': 'ORDER BY s.management_id DESC',
-                        'broadcast_date_asc': 'ORDER BY s.broadcast_date ASC',
-                        'broadcast_date_desc': 'ORDER BY s.broadcast_date DESC'
+                        'management_id_asc': 'ORDER BY management_id ASC',
+                        'management_id_desc': 'ORDER BY management_id DESC',
+                        'broadcast_date_asc': 'ORDER BY broadcast_date ASC',
+                        'broadcast_date_desc': 'ORDER BY broadcast_date DESC'
                     }
                     
-                    order_clause = sort_map.get(sort_order, 'ORDER BY s.management_id ASC')
+                    order_clause = sort_map.get(sort_order, 'ORDER BY management_id ASC')
                     base_query += f" {order_clause} LIMIT ?"
                     query_params.append(limit)
                     
